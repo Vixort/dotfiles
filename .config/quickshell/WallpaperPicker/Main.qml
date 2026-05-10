@@ -31,12 +31,12 @@ PanelWindow {
         property string thumbExt: ".jpg"
         property string videoExt: ".mp4"
 
-        property int cardWidth: 200
-        property int cardHeight: 280
+        property int cardWidth: 165
+        property int cardHeight: 240
         property int animationDuration: 450
         property int maxEntranceDelay: 800
         
-        property int cardRadius: 22
+        property int cardRadius: 18
     }
 
     property int currentIndex: 0
@@ -79,18 +79,6 @@ PanelWindow {
         onCountChanged: { if (root.currentIndex >= count && count > 0) root.currentIndex = count - 1 }
     }
 
-    // Background Dimming
-    Rectangle {
-        id: desktopDimmer
-        anchors.fill: parent
-        anchors.margins: -500
-        color: Qt.rgba(0, 0, 0, 0.55)
-        opacity: 0
-        
-        Component.onCompleted: opacity = 1
-        Behavior on opacity { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
-    }
-
     // Main UI Components
     Item {
         id: scene
@@ -115,21 +103,21 @@ PanelWindow {
                 readonly property int totalCards: Math.max(folderModel.count, 1)
                 readonly property bool isSelected: index === root.currentIndex
 
-                readonly property real spreadDeg: Math.min(80, totalCards * 9)
+                readonly property real spreadDeg: Math.min(75, totalCards * 8.5)
                 readonly property real angleDeg: totalCards > 1 ? (-spreadDeg / 2.0) + (index / (totalCards - 1.0)) * spreadDeg : 0
                 readonly property real angleRad: angleDeg * (Math.PI / 180.0)
 
-                readonly property real pivotY: scene.height + 100
-                readonly property real fanRadius: 280
+                readonly property real pivotY: scene.height + 70
+                readonly property real fanRadius: 250
 
                 width: config.cardWidth
                 height: config.cardHeight
 
                 x: (scene.width / 2) - (width / 2) + Math.sin(angleRad) * fanRadius
-                y: pivotY - (height / 2) - Math.cos(angleRad) * fanRadius + (isSelected ? -45 : 0)
+                y: pivotY - (height / 2) - Math.cos(angleRad) * fanRadius + (isSelected ? -35 : 0)
                 
                 rotation: angleDeg
-                scale: isSelected ? 1.15 : 0.90
+                scale: isSelected ? 1.15 : 0.88
                 z: isSelected ? 9999 : (totalCards - Math.abs(root.currentIndex - index))
                 opacity: 0
 
@@ -159,9 +147,9 @@ PanelWindow {
                     layer.enabled: true
                     layer.effect: MultiEffect {
                         shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, card.isSelected ? 0.8 : 0.4)
-                        shadowBlur: card.isSelected ? 1.5 : 0.6
-                        shadowVerticalOffset: card.isSelected ? 25 : 8
+                        shadowColor: Qt.rgba(0, 0, 0, card.isSelected ? 0.75 : 0.35)
+                        shadowBlur: card.isSelected ? 1.4 : 0.6
+                        shadowVerticalOffset: card.isSelected ? 18 : 6
                         shadowHorizontalOffset: 0
                         
                         Behavior on shadowBlur { NumberAnimation { duration: config.animationDuration; easing.type: Easing.OutExpo } }
@@ -177,7 +165,7 @@ PanelWindow {
                     color: "transparent"
                     clip: true
                     
-                    border.color: card.isSelected ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(1, 1, 1, 0.1)
+                    border.color: card.isSelected ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(1, 1, 1, 0.15)
                     border.width: card.isSelected ? 2 : 1
                     Behavior on border.color { ColorAnimation { duration: 300 } }
 
@@ -207,8 +195,8 @@ PanelWindow {
                         maskEnabled: true
                         maskSource: msk
                         
-                        saturation: card.isSelected ? 0.15 : -0.75 
-                        brightness: card.isSelected ? 0.05 : -0.35
+                        saturation: card.isSelected ? 0.15 : -0.60
+                        brightness: card.isSelected ? 0.05 : -0.25
 
                         Behavior on saturation { NumberAnimation { duration: config.animationDuration; easing.type: Easing.OutCubic } }
                         Behavior on brightness { NumberAnimation { duration: config.animationDuration; easing.type: Easing.OutCubic } }
@@ -218,12 +206,12 @@ PanelWindow {
                     Rectangle {
                         anchors.fill: parent
                         radius: config.cardRadius
-                        opacity: card.isSelected ? 0.15 : 0.05
+                        opacity: card.isSelected ? 0.20 : 0.05
                         Behavior on opacity { NumberAnimation { duration: 300 } }
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.8) }
-                            GradientStop { position: 0.4; color: "transparent" }
+                            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.7) }
+                            GradientStop { position: 0.35; color: "transparent" }
                             GradientStop { position: 1.0; color: "transparent" }
                         }
                         transform: Rotation { origin.x: width/2; origin.y: height/2; angle: 35 }
@@ -233,14 +221,14 @@ PanelWindow {
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 16
+                        anchors.bottomMargin: 14
                         
-                        width: labelText.implicitWidth + 30
-                        height: 28
+                        width: labelText.implicitWidth + 28
+                        height: 26
                         radius: height / 2
                         
-                        color: Qt.rgba(0.1, 0.1, 0.1, 0.75)
-                        border.color: Qt.rgba(1, 1, 1, 0.2)
+                        color: Qt.rgba(0.08, 0.08, 0.08, 0.80)
+                        border.color: Qt.rgba(1, 1, 1, 0.25)
                         border.width: 1
                         
                         opacity: card.isSelected ? 1 : 0
@@ -257,7 +245,7 @@ PanelWindow {
                             font.weight: Font.DemiBold
                             font.letterSpacing: 0.5
                             style: Text.Outline
-                            styleColor: Qt.rgba(0, 0, 0, 0.3)
+                            styleColor: Qt.rgba(0, 0, 0, 0.4)
                             
                             text: {
                                 if (typeof fileName === 'undefined' || !fileName) return ""
@@ -283,8 +271,8 @@ PanelWindow {
                         }
                     }
                     
-                    onEntered: if (!card.isSelected) card.scale = 0.95
-                    onExited: if (!card.isSelected) card.scale = 0.90
+                    onEntered: if (!card.isSelected) card.scale = 0.92
+                    onExited: if (!card.isSelected) card.scale = 0.88
                 }
             }
         }
