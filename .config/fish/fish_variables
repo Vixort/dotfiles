@@ -1,0 +1,5 @@
+# This file contains fish universal variable definitions.
+# VERSION: 3.0
+SETUVAR --export AIDER_MODEL:openrouter/google/gemini\x2d3\x2e1\x2dpro\x2dpreview
+SETUVAR --export OPENROUTER_API_KEY:sk\x2dor\x2dv1\x2d5749136c6d44163bedd000c131f962b5ef4c69d6d4db398c42aa131643f4d1ea
+SETUVAR __fish_initialized:4300
