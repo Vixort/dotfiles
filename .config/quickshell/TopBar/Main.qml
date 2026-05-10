@@ -11,8 +11,8 @@ PanelWindow {
 
     anchors { top: true; left: true; right: true }
     implicitHeight: 40
-    exclusiveZone: 20
-    margins { top: 2; left: 0; right: 0 }
+    exclusiveZone: 30
+    margins { top: 6; left: 0; right: 0 }
 
     // Theme Configuration
     QtObject {
@@ -28,12 +28,13 @@ PanelWindow {
         property color textVeryMuted: isDark ? Qt.rgba(1, 1, 1, 0.50) : Qt.rgba(0, 0, 0, 0.50)
         property color textGlow:      isDark ? Qt.rgba(1, 1, 1, 0.7)  : Qt.rgba(0, 0, 0, 0.5)
 
-        property color pillBg:        isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.06)
-        property color pillBorder:    isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
+        property color pillBg:        isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+        property color pillBorder:    isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
+        property color pillGloss:     isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(1, 1, 1, 0.30)
         
-        property color dotActive:     isDark ? Qt.rgba(1, 1, 1, 0.90) : Qt.rgba(0, 0, 0, 0.85)
-        property color dotOccupied:   isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.40)
-        property color dotEmpty:      isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
+        property color dotActive:     isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(0, 0, 0, 0.85)
+        property color dotOccupied:   isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.35)
+        property color dotEmpty:      isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)
     }
 
     // State Variables
@@ -41,7 +42,7 @@ PanelWindow {
     property var now: new Date()
     property bool isTakingScreenshot: false
 
-    // Optimized Hyprland Lookups
+    // State Lookups
     property var occupiedWorkspaceIds: {
         const wsValues = Hyprland.workspaces.values
         return wsValues.map(ws => ws.id)
@@ -71,7 +72,7 @@ PanelWindow {
         }
     }
 
-    // Background Sampler Process
+    // Background Sampler
     Process {
         id: screenshotProc
         command:[
@@ -83,27 +84,17 @@ PanelWindow {
         stdout: SplitParser {
             onRead: function(line) {
                 const val = parseFloat(line.trim())
-                if (!isNaN(val)) {
-                    theme.bgLuminance = val
-                }
+                if (!isNaN(val)) theme.bgLuminance = val
             }
         }
-        
-        stderr: SplitParser {
-            onRead: function(line) {
-                console.warn("Screenshot Sampler Error:", line)
-            }
-        }
-
         onExited: root.isTakingScreenshot = false
     }
 
-    // Helper Functions
+    // Format Utilities
     function formatUptime(seconds) {
         const h = Math.floor(seconds / 3600)
         const m = Math.floor((seconds % 3600) / 60)
         const s = seconds % 60
-        
         if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`
         return `${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`
     }
@@ -113,104 +104,118 @@ PanelWindow {
         return str.length > max ? str.substring(0, max) + "…" : str
     }
 
-    // Reusable UI Components
-    component PillBackground: Rectangle {
-        anchors.fill: parent
-        radius: 999
-        color: theme.pillBg
-        border.color: theme.pillBorder
-        border.width: 1
-        Behavior on color { ColorAnimation { duration: 600 } }
+    // UI Components
+    component InteractiveWidget: Item {
+        id: widgetRoot
+        default property alias content: container.data
+        property bool showShadow: false
+
+        Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
+        Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutExpo } }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 999
+            color: theme.pillBg
+            border.color: theme.pillBorder
+            border.width: 1
+            Behavior on color { ColorAnimation { duration: 600 } }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: theme.pillGloss }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
+
+            layer.enabled: widgetRoot.showShadow
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.35)
+                shadowBlur: 1.2
+                shadowVerticalOffset: 4
+            }
+        }
+
+        Item {
+            id: container
+            anchors.fill: parent
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: widgetRoot.scale = 1.05
+            onExited: widgetRoot.scale = 1.0
+            onPressed: widgetRoot.scale = 0.94
+            onReleased: widgetRoot.scale = containsMouse ? 1.05 : 1.0
+        }
     }
 
     component PillText: Text {
         font.pixelSize: 11
         font.letterSpacing: 0.4
-        font.weight: Font.Medium
+        font.weight: Font.DemiBold
         Behavior on color { ColorAnimation { duration: 600 } }
         
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: theme.textGlow
-            shadowBlur: 1.0
+            shadowBlur: 1.2
             shadowHorizontalOffset: 0
             shadowVerticalOffset: 0
         }
     }
 
-    // Main UI Components
+    // Main Layout
     Item {
-        id: container
+        id: mainLayout
         anchors.fill: parent
         opacity: 0
-        transform: Translate { id: barSlide; y: -12 }
+        transform: Translate { id: barSlide; y: -20 }
         
         Component.onCompleted: entranceAnim.start()
 
         ParallelAnimation {
             id: entranceAnim
-            NumberAnimation { target: container; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutCubic }
-            NumberAnimation { target: barSlide;  property: "y";       from: -12; to: 0; duration: 400; easing.type: Easing.OutCubic }
+            NumberAnimation { target: mainLayout; property: "opacity"; from: 0; to: 1; duration: 500; easing.type: Easing.OutCubic }
+            NumberAnimation { target: barSlide;  property: "y";       from: -20; to: 0; duration: 500; easing.type: Easing.OutBack }
         }
 
         // Left Module: Uptime
-        Item {
+        InteractiveWidget {
             anchors.left: parent.left
-            anchors.leftMargin: 16
+            anchors.leftMargin: 20
             anchors.verticalCenter: parent.verticalCenter
-            width: uptimeLabel.implicitWidth + 24
-            height: 22
-
-            PillBackground {}
+            width: uptimeLabel.implicitWidth + 28
+            height: 26
 
             PillText {
                 id: uptimeLabel
                 anchors.centerIn: parent
-                text: "⏱ " + root.formatUptime(root.uptimeSeconds)
+                text: root.formatUptime(root.uptimeSeconds)
                 color: theme.textMuted
             }
         }
 
-        // Center Module: Window Title & Workspaces
-        Item {
+        // Center Module: Workspaces & Title
+        InteractiveWidget {
             anchors.centerIn: parent
-            width: centerCol.implicitWidth + 32
-            height: centerCol.implicitHeight + 14
+            width: centerRow.implicitWidth + 32
+            height: 26
+            showShadow: true
 
-            PillBackground {
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.3)
-                    shadowBlur: 0.8
-                    shadowVerticalOffset: 4
-                }
-            }
-
-            Column {
-                id: centerCol
+            Row {
+                id: centerRow
                 anchors.centerIn: parent
-                spacing: 4
-
-                PillText {
-                    id: titleText
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.activeTitle !== "" ? root.truncate(root.activeTitle, 48) : "—"
-                    color: root.activeTitle !== "" ? theme.textColor : theme.textVeryMuted
-
-                    Behavior on text {
-                        SequentialAnimation {
-                            NumberAnimation { target: titleText; property: "opacity"; to: 0; duration: 80; easing.type: Easing.InCubic }
-                            PropertyAction {}
-                            NumberAnimation { target: titleText; property: "opacity"; to: 1; duration: 160; easing.type: Easing.OutCubic }
-                        }
-                    }
-                }
+                spacing: 12
 
                 Row {
                     id: dots
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
                     spacing: 6
 
                     Repeater {
@@ -220,22 +225,45 @@ PanelWindow {
                             readonly property bool isActive: Hyprland.focusedWorkspace !== null && Hyprland.focusedWorkspace.id === wsId
                             readonly property bool isOccupied: root.occupiedWorkspaceIds.includes(wsId)
                             
-                            width: isActive ? 16 : (isOccupied ? 5 : 4)
+                            width: isActive ? 18 : (isOccupied ? 6 : 4)
                             height: 4
                             radius: 999
                             color: isActive ? theme.dotActive : isOccupied ? theme.dotOccupied : theme.dotEmpty
                             
-                            Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutExpo } }
+                            Behavior on width { NumberAnimation { duration: 350; easing.type: Easing.OutBack } }
                             Behavior on color { ColorAnimation { duration: 600 } }
                             
                             layer.enabled: true
                             layer.effect: MultiEffect {
                                 shadowEnabled: isActive
                                 shadowColor: theme.textGlow
-                                shadowBlur: 1.0
+                                shadowBlur: 1.5
                                 shadowHorizontalOffset: 0
                                 shadowVerticalOffset: 0
                             }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 1
+                    height: 12
+                    color: theme.pillBorder
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.activeTitle !== ""
+                }
+
+                PillText {
+                    id: titleText
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.activeTitle !== "" ? root.truncate(root.activeTitle, 35) : "Desktop"
+                    color: root.activeTitle !== "" ? theme.textColor : theme.textVeryMuted
+
+                    Behavior on text {
+                        SequentialAnimation {
+                            NumberAnimation { target: titleText; property: "opacity"; to: 0; duration: 100; easing.type: Easing.OutExpo }
+                            PropertyAction {}
+                            NumberAnimation { target: titleText; property: "opacity"; to: 1; duration: 250; easing.type: Easing.OutCubic }
                         }
                     }
                 }
@@ -245,20 +273,17 @@ PanelWindow {
         // Right Module: Date & Time
         Item {
             anchors.right: parent.right
-            anchors.rightMargin: 16
+            anchors.rightMargin: 20
             anchors.verticalCenter: parent.verticalCenter
-            width: dateLabel.implicitWidth + clockLabel.implicitWidth + 40
-            height: 22
+            width: dateWidget.width + clockWidget.width + 8
+            height: 26
 
-            // Date Pill
-            Item {
-                anchors.right: clockPill.left
+            InteractiveWidget {
+                id: dateWidget
+                anchors.right: clockWidget.left
                 anchors.rightMargin: 8
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
+                height: parent.height
                 width: dateLabel.implicitWidth + 24
-
-                PillBackground {}
 
                 PillText {
                     id: dateLabel
@@ -268,15 +293,11 @@ PanelWindow {
                 }
             }
 
-            // Clock Pill
-            Item {
-                id: clockPill
+            InteractiveWidget {
+                id: clockWidget
                 anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
+                height: parent.height
                 width: clockLabel.implicitWidth + 24
-
-                PillBackground {}
 
                 PillText {
                     id: clockLabel
